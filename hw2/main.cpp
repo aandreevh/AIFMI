@@ -4,6 +4,13 @@
 #define THRESHOLD 3
 
 //time
+template<typename Type= std::chrono::nanoseconds>
+inline Type time(){
+    return std::chrono::duration_cast<Type>(
+            std::chrono::system_clock::now().time_since_epoch());
+}
+
+
 template<typename U,intmax_t Num,intmax_t Den>
 std::ostream& operator<<(std::ostream& out,std::chrono::duration<U, std::ratio<Num,Den>> dur ){
     out<<((dur.count()*Num))/(double)Den<<" sec.";
@@ -13,13 +20,9 @@ std::ostream& operator<<(std::ostream& out,std::chrono::duration<U, std::ratio<N
 template<typename T,typename Type =std::chrono::nanoseconds>
 inline Type clock(T method){
 
-    auto begin = std::chrono::duration_cast<Type>(
-            std::chrono::system_clock::now().time_since_epoch());
-
+    auto begin = time();
     method();
-
-    auto end = std::chrono::duration_cast<Type>(
-            std::chrono::system_clock::now().time_since_epoch());
+    auto end = time();
 
     return end-begin;
 }
@@ -201,15 +204,21 @@ inline void calculate(){
 }
 
 int main(int argc,char** argv) {
+    
     srand(time(nullptr));
 
-    num val = MAX_N;
+    num n = MAX_N;
 
     if(argc == 2){
-        val = atoi(argv[1]);
+        n = atoi(argv[1]);
     }
 
-    init(val);
+    if(n < 0 || n == 2 || n == 3){
+      std::cerr << "Invalid value for n." << std::endl;
+      return -1;
+    }
+
+    init(n);
     auto time = clock(calculate);
     print();
     std::cout<<"N: "<<N<<std::endl;
