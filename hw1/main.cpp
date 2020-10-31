@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <vector>
 #include <queue>
-
+#include <cmath>
 #define CHAR_ZERO '0'
 
 //time
@@ -112,7 +112,6 @@ struct hist {
 
     hist(hist *parent, move d) { //O(n^2)
         this->heuristic = heuristic;
-        num n = parent->b.size();
 
         this->parent = parent;
         parent->ref++;
@@ -231,6 +230,45 @@ void output(hist<H> *h) {
     std::cout << "H:" << h->h << std::endl << std::endl;
 }
 
+template<typename H>
+void output_move(hist<H>* move){
+    if(move == nullptr){
+
+    }
+    switch (move->mv) {
+        case LEFT:
+            std::cout<<"left"<<std::endl;
+            return;
+        case RIGHT:
+            std::cout<<"right"<<std::endl;
+            return;
+        case UP:
+            std::cout<<"up"<<std::endl;
+            return;
+
+        case DOWN:
+            std::cout<<"down"<<std::endl;
+            return;
+
+    }
+    std::cout<<std::endl;
+}
+
+template <typename H>
+hist<H> *input_strange() {
+    num n;
+    pos c;
+
+    std::cin >> n;
+    n = std::sqrt(n+1);
+
+    num inCell;
+    std::cin >> inCell;
+
+    c = cell(n, inCell);
+
+    return new hist<H>(inputTable(n), c);
+}
 template <typename H>
 hist<H> *input() {
     num n;
@@ -277,14 +315,49 @@ hist<H> *alg(hist<H> *root, num threshold ) {
 
     return nullptr;
 }
+
+template<typename H,typename O>
+void  print(hist<H> *h, O output) {
+    if (h == nullptr) {
+        std::cout << "end" << std::endl;
+        return;
+    }
+
+
+    output(h);
+
+    print(h->parent,output);
+
+}
+
 template<typename H>
 hist<H>* dupShallow(hist<H>* o){
     return new hist<H>(o->b,o->cell);
 }
 
+bool solvable(const board& b, pos p){
+num inversions=0;
+
+for(auto i=0;i<b.size()*b.size();i++){
+    for(auto j=i+1;j<b.size()*b.size();j++){
+        auto first = cell(b.size(),i);
+        auto second = cell(b.size(),j);
+        auto fval = b[first.second][first.first];
+        auto sval =b[second.second][second.first];
+        if(fval ==0 || sval ==0) continue;
+        inversions +=  fval > sval;
+    }
+}
+    return (b.size()%2 ==0 && (inversions+p.second)%2==0) || (b.size()%2 ==1 && inversions%2==0);
+}
 template<typename H,typename T>
 hist<H>* inc_alg(T method){
     auto h0 = method();
+
+    if(!solvable(h0->b,h0->cell)){
+        detach(h0);
+        return nullptr;
+    }
 
     num threshold = h0->b.size();
 
@@ -343,18 +416,6 @@ hist<H>* genPuzzle() {
     return nh ;
 }
 
-template<typename H>
-void print(hist<H> *h) {
-    if (h == nullptr) {
-        std::cout << "end" << std::endl;
-        return;
-    }
-
-    output(h);
-    print(h->parent);
-
-}
-
 struct Manhattan {
     num operator()(const board &b, pos tCell, pos p) const {
         auto target = cell(b.size(), b[p.second][p.first]);
@@ -379,10 +440,11 @@ struct Places {
     }\
 }\
 
-using HTYPE = H_BIN(+,Manhattan,Places);
+using HTYPE = Manhattan;
 
 int main() {
-  auto sol = inc_alg<HTYPE>(genPuzzle<HTYPE>);
-    print(sol);
+  auto sol = inc_alg<HTYPE>(input_strange<HTYPE>);//input
+    print(sol,output_move<HTYPE>);
+    std::cout<<"Moves: "<<sol->moves<<std::endl;
     detach(sol);
 }
