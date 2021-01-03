@@ -15,7 +15,10 @@ static vector<color> SET_COLORS{
         {0,127,127},
         {64,64,64},
         {0,0,0},
+        {255,127,0},
+        {127,255,0},
 };
+
 using pvec = vector<dpos>;
 
 void normalize(pvec& v){
@@ -124,19 +127,22 @@ void fix(const vector<dpos>& pos, vector<dpos>& ks, const disjoint & djs){
      counter++;
  }
 }
-disjoint order(const vector<dpos>& pos, int k){
+
+pair<disjoint, vector<dpos>> order(const vector<dpos>& pos, int k){
     auto ks = genKs(k,pos);
     auto dd =split(pos,ks);
+
     fix(pos,ks,dd);
     auto dd2 = split(pos,ks);
+    fix(pos, ks,dd2);
 
     while(isDiff(dd,dd2)){
         dd = dd2;
         dd2=split(pos,ks);
-        fix(pos,ks,dd);
+        fix(pos,ks,dd2);
     }
 
-    return dd2;
+    return {dd2,ks};
 }
 
 
@@ -158,18 +164,42 @@ vector<dpos> read(const string& fname){
 
     return out;
 }
+
+double cost(const vector<dpos>& ptz,const pair<disjoint,vector<dpos>>& v){
+    double out =0;
+        for(auto& p : v.first){
+           out+= dist(ptz[p.first],v.second[p.second]);
+        }
+
+        return out;
+}
+
 int main(int argc, const char** argv){
 
-    string fname="unbalance.txt";
-    int K = 8;
+    string fname;
+    int K ;
+
+    cin>>fname>>K;
 
     vector<dpos> ptz = read(fname);
 
-    auto sets = order(ptz,K);
+    double mcost=numeric_limits<double>::max();
+    disjoint minDisjoint;
+
+    const  auto itCount = 150;
+
+    for(auto i=0;i<itCount;i++){
+        auto sets = order(ptz,K);
+        double tmp = cost(ptz,sets);
+        if(tmp < mcost){
+            mcost = tmp;
+            minDisjoint = std::move(sets.first);
+        }
+    }
 
 
     img ii(1024,1024,{255,255,255});
-    drawPoints(ii,ptz,sets);
+    drawPoints(ii,ptz,minDisjoint);
 
     generateBitmapImage(ii,"out.bmp");
 }
